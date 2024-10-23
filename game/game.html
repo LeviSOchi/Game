@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html>
+	<head>
+	<meta charset="utf-8"/>
+	<title> Interação com o usuário</title>
+	</head>
+<body>
+	<style>
+		body{
+			background-color: #000;
+		}
+	</style>
+	
+	<canvas id="minha-tela" width="800" height="400" style="border: #fff solid 1px;"> </canvas>
+	<script>
+		var canvas = document.getElementById('minha-tela'); 
+		var ctx = canvas.getContext('2d');
+		
+        // Quadrado vermelho
+		var x_vermelho = 350
+		var y_vermelho = 150;
+        var largura_vermelho = 50;
+        var altura_vermelho = 50;
+
+        //quadrado azul
+		var x_azul = 650;
+		var y_azul = 0;
+        var largura_azul = 50;
+        var altura_azul = 50;
+
+		//para movimentação do meteoro
+		var trechoY = 1;
+		var trechoX = 1;
+
+		//Para o placar
+		var pontuacao = 0;
+		var tempo = 0;
+
+		var gameOver = false;
+
+		var angulo = 0;
+
+
+		//caso pare de se mover
+		var x_vermelho_prev = x_vermelho;
+		var y_vermelho_prev = y_vermelho;
+
+		//Imagens
+		var naveImage = new Image();
+		naveImage.src = '1.png';
+
+		var meteoroImage = new Image();
+		meteoroImage.src = '2.png';
+
+		naveImage.onload = function() {
+			meteoroImage.onload = function() {
+				//a função gameloop é chamada aqui
+				requestAnimationFrame(gameloop);
+			};
+		};
+
+        //a função gameloop é chamada aqui
+		requestAnimationFrame(gameloop);
+		
+		window.onkeydown = pressionaTecla; 
+        function pressionaTecla(tecla){
+			if(tecla.keyCode == 38  ) {
+				if(y_vermelho > 0){
+                	y_vermelho = y_vermelho - 50;
+					angulo = 0 //diminuir y tem o efeito de subida
+             } 
+			}
+
+			if(tecla.keyCode == 40  ) {
+                if(y_vermelho < 350){
+                    y_vermelho = y_vermelho + 50;
+					angulo = 180; //aumentar y tem o efeito de descer
+                }
+			}
+			
+			if (tecla.keyCode == 39) {
+				if (x_vermelho < 750) {
+					x_vermelho = x_vermelho + 50;
+					angulo = 90; // Apontar para a direita (ângulo 0)
+				}
+			}
+			
+			if (tecla.keyCode == 37) {
+				if (x_vermelho > 0) {
+					x_vermelho = x_vermelho - 50;
+					angulo = 270; // Apontar para a esquerda (ângulo 180)
+				}
+			}
+
+			tempo = 0;
+        }
+
+        function detectarColisao(){
+            if(((x_vermelho + largura_vermelho) > x_azul + 10 
+				&& x_vermelho + 10 < (x_azul + largura_azul) ) 
+				&& ((y_vermelho + altura_vermelho) > y_azul + 10 
+				&& y_vermelho + 10 < (y_azul + altura_azul))){
+					gameOver = true;
+					requestAnimationFrame(gameloop);
+				} 
+			else {
+                requestAnimationFrame(gameloop);
+            }
+        }
+
+		function desenharPontuacao(){
+			ctx.font = "24px Arial";
+			ctx.fillStyle = "#FFF";
+			ctx.fillText("Pontos: " + Math.floor(pontuacao), 10, 390);
+		}
+
+		function atualizarPontuacao(){
+			pontuacao += 1;
+		}
+
+		function gameloop() {
+
+			if (gameOver) {
+				ctx.font = '48px Arial';
+				ctx.fillStyle = '#F00';
+				ctx.fillText('GAME OVER', canvas.width / 2 - 150, canvas.height / 2);
+				return; // Encerrar o loop se o jogo acabou
+			}
+
+			desenharQuadrado(x_vermelho,y_vermelho);
+			desenharQuadrado(x_azul,y_azul);
+			desenharPontuacao();
+			movimentoAzul();
+            detectarColisao();
+			
+			if (x_vermelho === x_vermelho_prev && y_vermelho === y_vermelho_prev) {
+				return; // Parar de atualizar a pontuação
+			}
+
+			x_vermelho_prev = x_vermelho;
+			y_vermelho_prev = y_vermelho;
+
+		}
+
+		setInterval(atualizarPontuacao, 500)
+		
+		function movimentoAzul(){
+			var velocidade = 1 + pontuacao * 0.1; // Aumenta a velocidade com base na pontuação
+
+			//trecho vertical
+				if (trechoY == 1) {
+					y_azul += velocidade;
+					if (y_azul >= 350) trechoY = 2;
+				}
+				if (trechoY == 2) {
+					y_azul -= velocidade;
+					if (y_azul <= 0) trechoY = 3;
+				}
+				if (trechoY == 3) {
+					y_azul += velocidade;
+					if (y_azul >= 350) trechoY = 1;
+				}
+
+				// Trecho horizontal
+				if (trechoX == 1) {
+					x_azul += velocidade;
+					if (x_azul >= 750) trechoX = 2;
+				}
+				if (trechoX == 2) {
+					x_azul -= velocidade;
+					if (x_azul <= 0) trechoX = 3;
+				}
+				if (trechoX == 3) {
+					x_azul += velocidade;
+					if (x_azul >= 750) trechoX = 1;
+				}
+		}
+		
+        function desenharQuadrado(pX,pY) {
+	    	ctx.clearRect(0, 0, 800, 400); //antes de fazer o desenho é preciso limpar o canvas
+			
+			//desenhar quadrado vermelho
+            ctx.fillStyle = '#000';
+			ctx.fillRect(x_vermelho,y_vermelho,largura_azul,altura_azul);
+            
+            //desenhar quadrado azul
+			ctx.fillStyle = '#000';
+			ctx.fillRect(x_azul, y_azul, largura_azul, altura_azul);
+
+			// Desenhar a imagem da nave no quadrado vermelho
+			//ctx.drawImage(naveImage, x_vermelho, y_vermelho, largura_vermelho, altura_vermelho);
+
+			// Desenhar a imagem do meteoro no quadrado azul
+			ctx.drawImage(meteoroImage, x_azul, y_azul, largura_azul, altura_azul);
+
+			ctx.save();
+			ctx.translate(x_vermelho + largura_vermelho / 2, y_vermelho + altura_vermelho / 2);
+			ctx.rotate(angulo * Math.PI / 180);
+			ctx.drawImage(naveImage, -largura_vermelho / 2, -altura_vermelho / 2, largura_vermelho, altura_vermelho);
+			ctx.restore();
+		}
+
+	</script>
+</body>
+</html>
